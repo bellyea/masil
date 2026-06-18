@@ -12,19 +12,19 @@ Content-Type: application/json; charset=UTF-8
 
 ####
 
-GET http://localhost:3000/api/exhibitions
+GET http://localhost:3000/api/events
 
 ###
 
-POST http://localhost:3000/api/exhibitions
-Content-Type: application/json
+POST http://localhost:3000/api/events
+Content-Type: application/json; charset=UTF-8
+
 
 {
-  "title": "요시고 사진전",
-  "venue": "부산현대미술관",
-  "description": "여행 사진 중심 전시",
-  "thumbnail": "https://example.com/yosigo.jpg",
-  "website": "https://example.com",
-  "startDate": "2026-06-01",
-  "endDate": "2026-08-31"
+  "title": "홍대 아트 전시회",
+  "description": "신진 작가들의 현대 미술 전시",
+  "category": "EXHIBITION",
+  "venue": "홍대 갤러리 스트리트",
+  "startDate": "2026-06-20T10:00:00Z",
+  "endDate": "2026-06-25T18:00:00Z"
 }

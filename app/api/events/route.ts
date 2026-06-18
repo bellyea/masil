@@ -11,18 +11,15 @@ function getStatus(startDate: Date, endDate: Date) {
 }
 
 export async function GET() {
-  const exhibitions = await prisma.exhibition.findMany({
+  const events = await prisma.event.findMany({
     orderBy: {
       startDate: "asc",
     },
   });
 
-  const result = exhibitions.map((exhibition) => ({
-    ...exhibition,
-    status: getStatus(
-      exhibition.startDate,
-      exhibition.endDate
-    ),
+  const result = events.map((event) => ({
+    ...event,
+    status: getStatus(event.startDate, event.endDate),
   }));
 
   return NextResponse.json(result);
@@ -31,10 +28,11 @@ export async function GET() {
 export async function POST(request: Request) {
   const body = await request.json();
 
-  const exhibition = await prisma.exhibition.create({
+  const event = await prisma.event.create({
     data: {
       title: body.title,
       venue: body.venue,
+      category: body.category ?? "ETC",
       description: body.description,
       thumbnail: body.thumbnail,
       website: body.website,
@@ -44,5 +42,5 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json(exhibition);
+  return NextResponse.json(event);
 }
