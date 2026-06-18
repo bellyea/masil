@@ -10,4 +10,21 @@ Content-Type: application/json; charset=UTF-8
   "nickname": "nickname"
 }
 
+####
+
+GET http://localhost:3000/api/exhibitions
+
 ###
+
+POST http://localhost:3000/api/exhibitions
+Content-Type: application/json
+
+{
+  "title": "요시고 사진전",
+  "venue": "부산현대미술관",
+  "description": "여행 사진 중심 전시",
+  "thumbnail": "https://example.com/yosigo.jpg",
+  "website": "https://example.com",
+  "startDate": "2026-06-01",
+  "endDate": "2026-08-31"
+}
