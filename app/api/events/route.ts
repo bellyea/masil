@@ -10,17 +10,43 @@ function getStatus(startDate: Date, endDate: Date) {
   return "ONGOING";
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+
+  const category = searchParams.get("category");
+  const keyword = searchParams.get("keyword");
+  const status = searchParams.get("status");
+
   const events = await prisma.event.findMany({
     orderBy: {
       startDate: "asc",
     },
   });
 
-  const result = events.map((event) => ({
-    ...event,
-    status: getStatus(event.startDate, event.endDate),
-  }));
+  // 1차 필터 (DB에서 가져온 뒤 JS 필터링)
+  let result = events;
+
+  // 카테고리 필터
+  if (category) {
+    result = result.filter((e) => e.category === category);
+  }
+
+  // 키워드 필터
+  if (keyword) {
+    result = result.filter(
+      (e) =>
+        e.title.includes(keyword) ||
+        e.description?.includes(keyword)
+    );
+  }
+
+  // 상태 필터 (핵심)
+  if (status) {
+    result = result.filter((e) => {
+      const s = getStatus(e.startDate, e.endDate);
+      return s === status;
+    });
+  }
 
   return NextResponse.json(result);
 }
