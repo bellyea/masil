@@ -16,28 +16,30 @@ model User {
 }
 
 model Event {
-  id          String   @id @default(cuid())
+  id          String  @id @default(cuid())
   title       String
   description String?
 
-  category    EventCategory
+  category EventCategory
 
-  venueName   String
-  address     String?
-  lat         Float?
-  lng         Float?
+  venueName String  @default("Unknown")
+  address   String?
+  lat       Float?
+  lng       Float?
 
-  images      String[]
+  images String[]
 
-  website     String?
+  website String?
 
-  startDate   DateTime
-  endDate     DateTime
+  startDate DateTime
+  endDate   DateTime
 
-  isFeatured  Boolean  @default(false)
+  isFeatured Boolean @default(false)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  bookmarks Bookmark[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum EventCategory {
@@ -46,4 +48,14 @@ enum EventCategory {
   FESTIVAL
   PERFORMANCE
   ETC
+}
+
+model Bookmark {
+  id      String @id @default(cuid())
+  userId  String
+  eventId String
+
+  event Event @relation(fields: [eventId], references: [id])
+
+  createdAt DateTime @default(now())
 }
