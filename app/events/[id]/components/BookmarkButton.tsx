@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toggleBookmark } from "@/app/lib/api/bookmark";
 
 export default function BookmarkButton({
   id,
@@ -10,20 +11,7 @@ export default function BookmarkButton({
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/bookmarks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: "test-user",
-          eventId: id,
-        }),
-      });
-
-      return res.json();
-    },
+    mutationFn: () => toggleBookmark(id as string),
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookmark", id] });

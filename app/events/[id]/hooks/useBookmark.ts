@@ -1,14 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { fetchBookmarkStatus } from "@/app/lib/api/bookmark";
 
 export function useBookmark(id: string | string[] | undefined) {
   return useQuery({
     queryKey: ["bookmark", id],
-    queryFn: async () => {
-      const res = await fetch(
-        `/api/bookmarks/check?userId=test-user&eventId=${id}`
-      );
-      return res.json();
-    },
+    queryFn: () => fetchBookmarkStatus(id as string),
     enabled: !!id,
   });
 }
