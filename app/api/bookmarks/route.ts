@@ -4,25 +4,32 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
-  const userId = searchParams.get("userId");
-
-  if (!userId) {
-    return NextResponse.json(
-      { error: "Missing userId" },
-      { status: 400 }
-    );
-  }
+  const userId = searchParams.get("userId") ?? "test-user";
+  const cursor = searchParams.get("cursor");
+  const limit = 10;
 
   const bookmarks = await prisma.bookmark.findMany({
     where: {
       userId,
     },
     include: {
-      event: true, // ⭐ 핵심 (이벤트 같이 가져오기)
+      event: true,
+    },
+    take: limit,
+    skip: cursor ? 1 : 0,
+    cursor: cursor ? { id: cursor } : undefined,
+    orderBy: {
+      createdAt: "desc",
     },
   });
 
-  return NextResponse.json(bookmarks);
+  return NextResponse.json({
+    items: bookmarks,
+    nextCursor:
+      bookmarks.length === limit
+        ? bookmarks[bookmarks.length - 1].id
+        : null,
+  });
 }
 
 export async function POST(req: Request) {

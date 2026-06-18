@@ -1,88 +1,107 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-
-import EventCard from "./components/EventCard";
-import FilterBar from "./components/FilterBar";
-
-
-type Event = {
-  id: string;
-  title: string;
-  description?: string;
-  category: string;
-  startDate: string;
-  endDate: string;
-};
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
+import Link from "next/link";
+import { useEvents } from "./hooks/useEvents";
+import EventSkeleton from "./components/EventSkeleton";
+import EventList from "../components/EventList";
 
 export default function EventsPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  // 1. 필터 상태
-  const [filters, setFilters] = useState({
-    category: searchParams.get("category") || "",
-    status: searchParams.get("status") || "",
-    keyword: searchParams.get("keyword") || "",
-  });
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  // 2. 이벤트 데이터
-  const [events, setEvents] = useState<Event[]>([]);
+  const category = searchParams.get("category") ?? "";
+  const keyword = searchParams.get("keyword") ?? "";
+  const status = searchParams.get("status") ?? "";
 
-  // 3. API 호출 함수
-  const fetchEvents = async () => {
-    setLoading(true);
+  const { data, fetchNextPage, hasNextPage, isLoading, isError } =
+    useEvents({ category, keyword, status });
 
-    const params = new URLSearchParams();
+  // ===== Intersection Observer (개선된 방식) =====
+  const observerRef = useRef<HTMLDivElement | null>(null);
 
-    if (filters.category) params.set("category", filters.category);
-    if (filters.status) params.set("status", filters.status);
-    if (filters.keyword) params.set("keyword", filters.keyword);
-
-    const res = await fetch(`/api/events?${params}`);
-    const data = await res.json();
-
-    setEvents(data);
-    setLoading(false);
-  };
-
-  // 4. filters 바뀔 때마다 자동 호출
   useEffect(() => {
-    const params = new URLSearchParams();
+    const el = observerRef.current;
+    if (!el) return;
 
-    if (filters.category) params.set("category", filters.category);
-    if (filters.status) params.set("status", filters.status);
-    if (filters.keyword) params.set("keyword", filters.keyword);
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasNextPage) {
+        fetchNextPage();
+      }
+    });
 
-    router.push(`/events?${params.toString()}`);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage]);
 
-    fetchEvents();
-  }, [filters]);
+  // ===== 데이터 상태 처리 =====
+  if (isLoading) return <EventSkeleton />;
+  if (isError) return <p style={{ padding: 20 }}>데이터 로딩 실패 😢</p>;
+
+  const isEmpty = data?.pages?.[0]?.items?.length === 0;
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>Events</h1>
+      {/* ===== FILTER UI (항상 유지) ===== */}
+      <select
+        value={category}
+        onChange={(e) => {
+          const params = new URLSearchParams(searchParams.toString());
+          if (e.target.value) params.set("category", e.target.value);
+          else params.delete("category");
+          router.push(`?${params.toString()}`);
+        }}
+      >
+        <option value="">전체</option>
+        <option value="EXHIBITION">전시</option>
+        <option value="POPUP">팝업</option>
+      </select>
 
-      {/* ===== 필터 버튼 ===== */}
-      <FilterBar filters={filters} setFilters={setFilters} />
 
-      {/* ===== 검색 ===== */}
+
+      <select
+        value={status}
+        onChange={(e) => {
+          const params = new URLSearchParams(searchParams.toString());
+          if (e.target.value) params.set("status", e.target.value);
+          else params.delete("status");
+          router.push(`?${params.toString()}`);
+        }}
+      >
+        <option value="">전체</option>
+        <option value="UPCOMING">예정</option>
+        <option value="ONGOING">진행중</option>
+        <option value="ENDED">종료</option>
+      </select>
+
+
+
       <input
         placeholder="검색..."
-        onChange={(e) =>
-          setFilters({ ...filters, keyword: e.target.value })
-        }
-        style={{ marginBottom: 20 }}
+        value={keyword}
+        onChange={(e) => {
+          const params = new URLSearchParams(searchParams.toString());
+          if (e.target.value) params.set("keyword", e.target.value);
+          else params.delete("keyword");
+          router.push(`?${params.toString()}`);
+        }}
+
+        style={{ marginTop: 10 }}
+
       />
 
-      {/* ===== 리스트 ===== */}
-      {events.map((event) => (
-        <EventCard key={event.id} event={event} />
-      ))}
-      {loading && <p>로딩중...</p>}
-      {!loading && events.length === 0 && (
-        <p>이벤트가 없습니다 😢</p>
+      {/* ===== LIST 또는 EMPTY VIEW ===== */}
+      {isEmpty ? (
+        <p style={{ padding: 20, textAlign: 'center' }}>검색 결과 없음</p>
+      ) : (
+        <div>
+          <EventList pages={data?.pages ?? []} />
+          
+          {/* 하단 옵저버 및 로딩 표시 */}
+          <div ref={observerRef} style={{ height: 40 }} />
+          {hasNextPage && <p style={{ textAlign: "center" }}>더 불러오는 중...</p>}
+        </div>
       )}
     </div>
   );

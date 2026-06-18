@@ -13,42 +13,50 @@ function getStatus(startDate: Date, endDate: Date) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
+  const cursor = searchParams.get("cursor");
+  const limit = 10;
+
   const category = searchParams.get("category");
   const keyword = searchParams.get("keyword");
   const status = searchParams.get("status");
 
-  const events = await prisma.event.findMany({
-    orderBy: {
-      startDate: "asc",
-    },
+  let events = await prisma.event.findMany({
+    orderBy: { startDate: "asc" },
+    take: limit,
+    skip: cursor ? 1 : 0,
+    cursor: cursor ? { id: cursor } : undefined,
   });
 
-  // 1차 필터 (DB에서 가져온 뒤 JS 필터링)
-  let result = events;
-
-  // 카테고리 필터
+  // 필터 (서버에서 유지)
   if (category) {
-    result = result.filter((e) => e.category === category);
+    events = events.filter((e) => e.category === category);
   }
 
-  // 키워드 필터
   if (keyword) {
-    result = result.filter(
-      (e) =>
-        e.title.includes(keyword) ||
-        e.description?.includes(keyword)
+    events = events.filter((e) =>
+      e.title.includes(keyword) ||
+      e.description?.includes(keyword)
     );
   }
 
-  // 상태 필터 (핵심)
   if (status) {
-    result = result.filter((e) => {
-      const s = getStatus(e.startDate, e.endDate);
-      return s === status;
+    events = events.filter((e) => {
+      const now = new Date();
+
+      if (status === "UPCOMING") return new Date(e.startDate) > now;
+      if (status === "ONGOING")
+        return new Date(e.startDate) <= now && new Date(e.endDate) >= now;
+      if (status === "ENDED") return new Date(e.endDate) < now;
+
+      return true;
     });
   }
 
-  return NextResponse.json(result);
+  return NextResponse.json({
+    items: events,
+    nextCursor:
+      events.length === limit ? events[events.length - 1].id : null,
+  });
 }
 
 export async function POST(request: Request) {
