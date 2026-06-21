@@ -8,9 +8,13 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  nickname  String
+  id String @id @default(cuid())
+
+  email String @unique
+  nickname String
+
+  bookmarks Bookmark[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -51,11 +55,15 @@ enum EventCategory {
 }
 
 model Bookmark {
-  id      String @id @default(cuid())
-  userId  String
+  id String @id @default(cuid())
+
+  userId String
   eventId String
 
+  user  User  @relation(fields: [userId], references: [id])
   event Event @relation(fields: [eventId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@unique([userId, eventId])
 }
