@@ -4,13 +4,11 @@ import { useEffect, useRef } from "react";
 import { useBookmarks } from "./hooks/useBookmarks";
 import Link from "next/link";
 import EventList from "@/app/components/EventList";
-import { getCurrentUserId } from "@/app/lib/user";
 
 export default function BookmarksPage() {
-  const userId = getCurrentUserId();
 
   const { data, fetchNextPage, hasNextPage, isLoading, isError } =
-    useBookmarks(userId);
+    useBookmarks();
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 

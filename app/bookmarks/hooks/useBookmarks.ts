@@ -1,8 +1,8 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 
-export function useBookmarks(userId: string) {
+export function useBookmarks() {
   return useInfiniteQuery({
-    queryKey: ["bookmarks", userId],
+    queryKey: ["bookmarks"],
 
     initialPageParam: undefined,
 
@@ -10,9 +10,8 @@ export function useBookmarks(userId: string) {
       const params = new URLSearchParams();
 
       if (pageParam) params.set("cursor", pageParam);
-      params.set("userId", userId);
 
-      const res = await fetch(`/api/bookmarks?${params.toString()}`);
+      const res = await fetch(`/api/bookmarks`);
       return res.json();
     },
 
