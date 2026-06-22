@@ -24,7 +24,9 @@ Content-Type: application/json; charset=UTF-8
   "title": "홍대 아트 전시회",
   "description": "신진 작가들의 현대 미술 전시",
   "category": "EXHIBITION",
-  "venue": "홍대 갤러리 스트리트",
+  "venueName": "홍대 갤러리 스트리트",
+  "images": [],
+  "website": "",
   "startDate": "2026-06-20T10:00:00Z",
   "endDate": "2026-06-25T18:00:00Z"
 }

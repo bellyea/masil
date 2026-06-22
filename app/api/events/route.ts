@@ -21,10 +21,12 @@ export async function GET(request: Request) {
   const status = searchParams.get("status");
 
   let events = await prisma.event.findMany({
-    orderBy: { startDate: "asc" },
     take: limit,
     skip: cursor ? 1 : 0,
     cursor: cursor ? { id: cursor } : undefined,
+    orderBy: {
+      startDate: "asc",
+    },
   });
 
   // 필터 (서버에서 유지)
@@ -65,13 +67,21 @@ export async function POST(request: Request) {
   const event = await prisma.event.create({
     data: {
       title: body.title,
-      venue: body.venue,
-      category: body.category ?? "ETC",
       description: body.description,
-      thumbnail: body.thumbnail,
+
+      category: body.category ?? "ETC",
+
+      venueName: body.venueName ?? "Unknown",
+
+      address: body.address,
+
+      images: body.images ?? [],
+
       website: body.website,
+
       startDate: new Date(body.startDate),
       endDate: new Date(body.endDate),
+
       isFeatured: body.isFeatured ?? false,
     },
   });

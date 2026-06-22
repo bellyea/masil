@@ -15,25 +15,60 @@ export default function EventsPage() {
   const keyword = searchParams.get("keyword") ?? "";
   const status = searchParams.get("status") ?? "";
 
-  const { data, fetchNextPage, hasNextPage, isLoading, isError } =
-    useEvents({ category, keyword, status });
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+  } = useEvents({ category, keyword, status });
 
   // ===== Intersection Observer (개선된 방식) =====
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const el = observerRef.current;
-    if (!el) return;
+    if (!hasNextPage) return;
 
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasNextPage) {
-        fetchNextPage();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          hasNextPage &&
+          !isFetchingNextPage
+        ) {
+          fetchNextPage();
+        }
+      },
+      {
+        rootMargin: "300px",
       }
-    });
+    );
 
-    observer.observe(el);
+    const el = observerRef.current;
+
+    if (el) {
+      observer.observe(el);
+    }
+
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage]);
+  }, [
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  ]);
+
+  useEffect(() => {
+    if (!hasNextPage) return;
+
+    const isScrollable =
+      document.documentElement.scrollHeight >
+      window.innerHeight;
+
+    if (!isScrollable) {
+      fetchNextPage();
+    }
+  }, [data, hasNextPage, fetchNextPage]);
 
   // ===== 데이터 상태 처리 =====
   if (isLoading) return <EventSkeleton />;
@@ -57,7 +92,6 @@ export default function EventsPage() {
         <option value="EXHIBITION">전시</option>
         <option value="POPUP">팝업</option>
       </select>
-
 
 
       <select
@@ -100,7 +134,17 @@ export default function EventsPage() {
           
           {/* 하단 옵저버 및 로딩 표시 */}
           <div ref={observerRef} style={{ height: 40 }} />
-          {hasNextPage && <p style={{ textAlign: "center" }}>더 불러오는 중...</p>}
+          {isFetchingNextPage && (
+            <p style={{ textAlign: "center" }}>
+              더 불러오는 중...
+            </p>
+          )}
+
+          {!hasNextPage && (
+            <p style={{ textAlign: "center" }}>
+              마지막 이벤트입니다 🎉
+            </p>
+          )}
         </div>
       )}
     </div>

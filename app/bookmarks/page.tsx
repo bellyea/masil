@@ -6,26 +6,47 @@ import Link from "next/link";
 import EventList from "@/app/components/EventList";
 
 export default function BookmarksPage() {
-
-  const { data, fetchNextPage, hasNextPage, isLoading, isError } =
-    useBookmarks();
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+  } = useBookmarks();
 
   const observerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const el = observerRef.current;
-    if (!el) return;
+    if (!hasNextPage) return;
 
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasNextPage) {
-        fetchNextPage();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          hasNextPage &&
+          !isFetchingNextPage
+        ) {
+          fetchNextPage();
+        }
+      },
+      {
+        rootMargin: "300px",
       }
-    });
+    );
 
-    observer.observe(el);
+    const el = observerRef.current;
+
+    if (el) {
+      observer.observe(el);
+    }
 
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage]);
+  }, [
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  ]);
 
   if (isLoading) return <p>로딩중...</p>;
 
@@ -48,7 +69,9 @@ export default function BookmarksPage() {
 
       <div ref={observerRef} style={{ height: 40 }} />
 
-      {hasNextPage && <p>더 불러오는 중...</p>}
+      {isFetchingNextPage && <p>더 불러오는 중...</p>}
+
+      {!hasNextPage && <p>마지막 북마크입니다</p>}
     </div>
   );
 }

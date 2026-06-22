@@ -11,7 +11,7 @@ export function useBookmarks() {
 
       if (pageParam) params.set("cursor", pageParam);
 
-      const res = await fetch(`/api/bookmarks`);
+      const res = await fetch(`/api/bookmarks?${params.toString()}`);
       return res.json();
     },
 
