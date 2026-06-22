@@ -1,14 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-
-function getStatus(startDate: Date, endDate: Date) {
-  const now = new Date();
-
-  if (now < startDate) return "UPCOMING";
-  if (now > endDate) return "ENDED";
-
-  return "ONGOING";
-}
+import { buildEventWhere } from "@/lib/server/eventWhere";
+import { isEventStatus } from "@/lib/server/eventStatus";
+import { isEventCategory } from "@/lib/server/category";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -16,48 +10,34 @@ export async function GET(request: Request) {
   const cursor = searchParams.get("cursor");
   const limit = 10;
 
-  const category = searchParams.get("category");
-  const keyword = searchParams.get("keyword");
-  const status = searchParams.get("status");
 
-  let events = await prisma.event.findMany({
+  const categoryParam = searchParams.get("category");
+  const statusParam = searchParams.get("status");
+  
+  const category = isEventCategory(categoryParam) ? categoryParam : undefined;
+  const status = isEventStatus(statusParam) ? statusParam : undefined;
+  const keyword = searchParams.get("keyword") ?? undefined;
+
+  const where = buildEventWhere({
+    category,
+    keyword,
+    status,
+  });
+
+  const events = await prisma.event.findMany({
+    where,
     take: limit,
     skip: cursor ? 1 : 0,
     cursor: cursor ? { id: cursor } : undefined,
-    orderBy: {
-      startDate: "asc",
-    },
+    orderBy: { startDate: "asc" },
   });
-
-  // 필터 (서버에서 유지)
-  if (category) {
-    events = events.filter((e) => e.category === category);
-  }
-
-  if (keyword) {
-    events = events.filter((e) =>
-      e.title.includes(keyword) ||
-      e.description?.includes(keyword)
-    );
-  }
-
-  if (status) {
-    events = events.filter((e) => {
-      const now = new Date();
-
-      if (status === "UPCOMING") return new Date(e.startDate) > now;
-      if (status === "ONGOING")
-        return new Date(e.startDate) <= now && new Date(e.endDate) >= now;
-      if (status === "ENDED") return new Date(e.endDate) < now;
-
-      return true;
-    });
-  }
 
   return NextResponse.json({
     items: events,
     nextCursor:
-      events.length === limit ? events[events.length - 1].id : null,
+      events.length === limit
+        ? events[events.length - 1].id
+        : null,
   });
 }
 
