@@ -1,4 +1,5 @@
 import { Server } from "socket.io";
+import { viewerStore } from "@/lib/socket-store";
 
 let io: Server;
 
@@ -11,34 +12,29 @@ export function getIO(server?: any) {
       },
     });
 
-    const viewerMap = new Map<string, number>();
-
     io.on("connection", (socket) => {
       console.log("connected");
 
-      socket.on("join", (eventId: string) => {
+      socket.on("join", (eventId) => {
         socket.join(eventId);
-
-        const current = viewerMap.get(eventId) || 0;
-        const next = current + 1;
-
-        viewerMap.set(eventId, next);
-
-        io.to(eventId).emit("viewer", next);
+        viewerStore.join(eventId, socket.id);
+        
+        io.to(eventId).emit("viewer", viewerStore.getCount(eventId));
       });
 
-      socket.on("leave", (eventId: string) => {
-        socket.leave(eventId);
+      socket.on("leave", (eventId) => {
+        viewerStore.leave(eventId, socket.id);
+        io.to(eventId).emit("viewer", viewerStore.getCount(eventId));
+      });
 
-        const current = viewerMap.get(eventId) || 1;
-        const next = Math.max(current - 1, 0);
-
-        viewerMap.set(eventId, next);
-
-        io.to(eventId).emit("viewer", next);
+      socket.on("disconnect", () => {
+        const affectedEvents = viewerStore.removeSocket(socket.id);
+        
+        affectedEvents.forEach((eventId) => {
+          io.to(eventId).emit("viewer", viewerStore.getCount(eventId));
+        });
       });
     });
   }
-
   return io;
 }

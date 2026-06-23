@@ -5,16 +5,25 @@ import { io, Socket } from "socket.io-client";
 
 export function useViewer(eventId: string) {
   const socketRef = useRef<Socket | null>(null);
+  const joinedRef = useRef(false);
+
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    socketRef.current = io({
+    const socket = io({
       path: "/socket.io",
+      transports: ["websocket"],
+      reconnection: true,
     });
 
-    const socket = socketRef.current;
+    socketRef.current = socket;
 
-    socket.emit("join", eventId);
+    socket.on("connect", () => {
+      if (!joinedRef.current) {
+        socket.emit("join", eventId);
+        joinedRef.current = true;
+      }
+    });
 
     socket.on("viewer", (value: number) => {
       setCount(value);
@@ -23,6 +32,7 @@ export function useViewer(eventId: string) {
     return () => {
       socket.emit("leave", eventId);
       socket.disconnect();
+      joinedRef.current = false;
     };
   }, [eventId]);
 
