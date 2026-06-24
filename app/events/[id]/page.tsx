@@ -5,7 +5,7 @@ import { useEvent } from "./hooks/useEvent";
 import { useBookmark } from "./hooks/useBookmark";
 import { useViewer } from "./hooks/useViewer";
 import EventInfo from "./components/EventInfo";
-import BookmarkButton from "./components/BookmarkButton";
+import BookmarkButton from "../../../components/bookmark/BookmarkButton";
 import EventSkeleton from "./components/EventSkeleton";
 
 export default function EventDetailPage() {

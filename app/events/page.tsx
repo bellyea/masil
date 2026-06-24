@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useEvents } from "./hooks/useEvents";
 import EventSkeleton from "./components/EventSkeleton";
-import EventList from "../components/EventList";
+import EventList from "../../components/event/EventList";
 
 export default function EventsPage() {
   const searchParams = useSearchParams();
@@ -32,17 +32,13 @@ export default function EventsPage() {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (
-          entries[0].isIntersecting &&
-          hasNextPage &&
-          !isFetchingNextPage
-        ) {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
           fetchNextPage();
         }
       },
       {
         rootMargin: "300px",
-      }
+      },
     );
 
     const el = observerRef.current;
@@ -52,18 +48,13 @@ export default function EventsPage() {
     }
 
     return () => observer.disconnect();
-  }, [
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  ]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   useEffect(() => {
     if (!hasNextPage) return;
 
     const isScrollable =
-      document.documentElement.scrollHeight >
-      window.innerHeight;
+      document.documentElement.scrollHeight > window.innerHeight;
 
     if (!isScrollable) {
       fetchNextPage();
@@ -93,7 +84,6 @@ export default function EventsPage() {
         <option value="POPUP">팝업</option>
       </select>
 
-
       <select
         value={status}
         onChange={(e) => {
@@ -109,8 +99,6 @@ export default function EventsPage() {
         <option value="ENDED">종료</option>
       </select>
 
-
-
       <input
         placeholder="검색..."
         value={keyword}
@@ -120,30 +108,24 @@ export default function EventsPage() {
           else params.delete("keyword");
           router.push(`?${params.toString()}`);
         }}
-
         style={{ marginTop: 10 }}
-
       />
 
       {/* ===== LIST 또는 EMPTY VIEW ===== */}
       {isEmpty ? (
-        <p style={{ padding: 20, textAlign: 'center' }}>검색 결과 없음</p>
+        <p style={{ padding: 20, textAlign: "center" }}>검색 결과 없음</p>
       ) : (
         <div>
           <EventList pages={data?.pages ?? []} />
-          
+
           {/* 하단 옵저버 및 로딩 표시 */}
           <div ref={observerRef} style={{ height: 40 }} />
           {isFetchingNextPage && (
-            <p style={{ textAlign: "center" }}>
-              더 불러오는 중...
-            </p>
+            <p style={{ textAlign: "center" }}>더 불러오는 중...</p>
           )}
 
           {!hasNextPage && (
-            <p style={{ textAlign: "center" }}>
-              마지막 이벤트입니다 🎉
-            </p>
+            <p style={{ textAlign: "center" }}>마지막 이벤트입니다 🎉</p>
           )}
         </div>
       )}

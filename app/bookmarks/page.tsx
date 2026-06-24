@@ -2,8 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useBookmarks } from "./hooks/useBookmarks";
-import Link from "next/link";
-import EventList from "@/app/components/EventList";
+import EventList from "@/components/event/EventList";
 
 export default function BookmarksPage() {
   const {
@@ -22,17 +21,13 @@ export default function BookmarksPage() {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (
-          entries[0].isIntersecting &&
-          hasNextPage &&
-          !isFetchingNextPage
-        ) {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
           fetchNextPage();
         }
       },
       {
         rootMargin: "300px",
-      }
+      },
     );
 
     const el = observerRef.current;
@@ -42,11 +37,7 @@ export default function BookmarksPage() {
     }
 
     return () => observer.disconnect();
-  }, [
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  ]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   if (isLoading) return <p>로딩중...</p>;
 
@@ -61,10 +52,7 @@ export default function BookmarksPage() {
       {isEmpty ? (
         <p>북마크 없음</p>
       ) : (
-        <EventList
-          pages={data?.pages ?? []}
-          getItem={(bm) => bm.event}
-        />
+        <EventList pages={data?.pages ?? []} getItem={(bm) => bm.event} />
       )}
 
       <div ref={observerRef} style={{ height: 40 }} />

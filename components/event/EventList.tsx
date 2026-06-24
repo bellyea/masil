@@ -2,7 +2,7 @@ import EventCard from "./EventCard";
 
 type Props = {
   pages: any[];
-  getItem?: (item: any) => any; // 👈 추가
+  getItem?: (item: any) => any;
 };
 
 export default function EventList({ pages, getItem }: Props) {
