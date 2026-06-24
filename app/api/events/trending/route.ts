@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { viewerStore } from "@/lib/socket-store";
 import { prisma } from "@/lib/prisma";
 
+const TRENDING_LIMIT = 5;
+
 export async function GET() {
   const viewerMap = viewerStore.getMap();
 
@@ -14,9 +16,23 @@ export async function GET() {
 
   ranked.sort((a, b) => b.viewers - a.viewers);
 
-  const top = ranked.slice(0, 10);
+  const top = ranked.slice(0, TRENDING_LIMIT);
 
   const ids = top.map((e) => e.eventId);
+
+  if (ids.length === 0) {
+    const latestEvents = await prisma.event.findMany({
+      take: TRENDING_LIMIT,
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json({
+      type: "fallback",
+      items: latestEvents,
+    });
+  }
 
   const events = await prisma.event.findMany({
     where: {
@@ -32,5 +48,8 @@ export async function GET() {
 
   result.sort((a, b) => b.viewers - a.viewers);
 
-  return NextResponse.json(result);
+  return NextResponse.json({
+    type: "trending",
+    items: result,
+  });
 }
