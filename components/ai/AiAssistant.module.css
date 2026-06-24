@@ -1,0 +1,25 @@
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.input {
+  width: 100%;
+  padding: 8px;
+}
+
+.user {
+  text-align: right;
+  background: #eee;
+  padding: 8px;
+  margin: 4px 0;
+  border-radius: 8px;
+}
+
+.ai {
+  text-align: left;
+  background: #dff3ff;
+  padding: 8px;
+  margin: 4px 0;
+  border-radius: 8px;
+}

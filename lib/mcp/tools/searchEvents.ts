@@ -24,6 +24,6 @@ export async function searchEvents({
       }),
     },
 
-    take: 10,
+    take: 5,
   });
 }

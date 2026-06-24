@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import TrendingEvents from "@/components/event/TrendingEvents";
+import AiAssistant from "@/components/ai/AiAssistant";
 
 export default async function HomePage() {
   const session = await auth();
@@ -11,6 +12,8 @@ export default async function HomePage() {
       {session ? <p>로그인됨: {session.user?.email}</p> : <p>로그인 안됨</p>}
       <main>
         <TrendingEvents />
+
+        <AiAssistant />
       </main>
     </div>
   );
