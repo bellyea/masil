@@ -30,3 +30,12 @@ Content-Type: application/json; charset=UTF-8
   "startDate": "2026-06-20T10:00:00Z",
   "endDate": "2026-06-25T18:00:00Z"
 }
+
+###
+POST http://localhost:3000/api/chat
+Content-Type: application/json; charset=UTF-8
+
+{
+  "message": "전시 찾아줘"
+}
+
