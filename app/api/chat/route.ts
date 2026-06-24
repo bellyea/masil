@@ -48,9 +48,26 @@ export async function POST(req: NextRequest) {
     toolName,
     args
   );
+
+  const finalResponse =
+  await client.chat.completions.create({
+    model: "auto",
+    messages: [
+      {
+        role: "user",
+        content: message,
+      },
+      response.choices[0].message as any,
+      {
+        role: "tool",
+        tool_call_id: toolCall.id,
+        content: JSON.stringify(result),
+      },
+    ],
+  });
   
   return NextResponse.json({
-    tool: toolName,
-    result,
-  });
+  answer:
+    finalResponse.choices[0].message.content,
+});
 }
