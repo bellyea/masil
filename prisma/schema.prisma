@@ -50,9 +50,10 @@ model Event {
 
 enum EventCategory {
   EXHIBITION
-  POPUP
   FESTIVAL
   PERFORMANCE
+  THEATER
+  MUSICAL
   ETC
 }
 
