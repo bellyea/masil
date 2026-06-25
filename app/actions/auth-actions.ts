@@ -1,10 +1,12 @@
-"use server";
+﻿"use server";
 
 import { signIn, signOut } from "@/auth";
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(formData?: FormData) {
+  const redirectTo = formData?.get("callbackUrl")?.toString() || "/";
+
   await signIn("google", {
-    redirectTo: "/",
+    redirectTo,
   });
 }
 

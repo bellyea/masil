@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ status: "deleted" });
+    return NextResponse.json({ status: "deleted", isBookmarked: false });
   }
 
   // 없으면 생성
@@ -81,5 +81,5 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json({ status: "created", bookmark });
+  return NextResponse.json({ status: "created", isBookmarked: true, bookmark });
 }

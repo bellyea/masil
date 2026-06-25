@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+﻿import { EventCategory, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -6,10 +6,10 @@ async function main() {
   await prisma.event.deleteMany();
 
   const categories = [
-    "EXHIBITION",
-    "POPUP",
-    "FESTIVAL",
-    "PERFORMANCE",
+    EventCategory.EXHIBITION,
+    EventCategory.THEATER,
+    EventCategory.FESTIVAL,
+    EventCategory.PERFORMANCE,
   ] as const;
 
   const events = Array.from({ length: 50 }, (_, i) => ({

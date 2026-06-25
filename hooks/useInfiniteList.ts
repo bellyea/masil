@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+﻿import { useInfiniteQuery } from "@tanstack/react-query";
 
 type Params = {
   key: string[];
@@ -6,16 +6,18 @@ type Params = {
   extraParams?: Record<string, string | undefined>;
 };
 
-export function useInfiniteList({ key, url, extraParams }: Params) {
-  return useInfiniteQuery({
+export function useInfiniteList<TPage extends { nextCursor?: string | null }>({
+  key,
+  url,
+  extraParams,
+}: Params) {
+  return useInfiniteQuery<TPage>({
     queryKey: key,
-
-    initialPageParam: undefined,
-
+    initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams();
 
-      if (pageParam) params.set("cursor", pageParam);
+      if (pageParam) params.set("cursor", String(pageParam));
 
       if (extraParams) {
         Object.entries(extraParams).forEach(([k, v]) => {
@@ -24,9 +26,13 @@ export function useInfiniteList({ key, url, extraParams }: Params) {
       }
 
       const res = await fetch(`${url}?${params.toString()}`);
-      return res.json();
-    },
 
+      if (!res.ok) {
+        throw new Error("Failed to fetch list");
+      }
+
+      return (await res.json()) as TPage;
+    },
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 }

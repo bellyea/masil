@@ -1,4 +1,4 @@
-import { Prisma, EventCategory } from "@prisma/client";
+﻿import { Prisma, EventCategory } from "@prisma/client";
 import { buildStatusWhere, EventStatus } from "./eventStatus";
 
 type EventFilter = {
@@ -20,6 +20,8 @@ export function buildEventWhere({
     where.OR = [
       { title: { contains: keyword, mode: "insensitive" } },
       { description: { contains: keyword, mode: "insensitive" } },
+      { venueName: { contains: keyword, mode: "insensitive" } },
+      { address: { contains: keyword, mode: "insensitive" } },
     ];
   }
 
