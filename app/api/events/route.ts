@@ -1,9 +1,10 @@
-﻿import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { buildEventWhere } from "@/lib/server/eventWhere";
 import { isEventStatus } from "@/lib/server/eventStatus";
 import { isEventCategory } from "@/lib/server/category";
+import { assertSameOrigin } from "@/lib/server/origin";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -64,6 +65,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const originError = assertSameOrigin(request);
+  if (originError) return originError;
+
   const body = await request.json();
 
   const event = await prisma.event.create({

@@ -1,6 +1,7 @@
-﻿import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { assertSameOrigin } from "@/lib/server/origin";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -42,6 +43,9 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const originError = assertSameOrigin(req);
+  if (originError) return originError;
+
   const session = await auth();
 
   if (!session?.user?.id) {

@@ -1,6 +1,7 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { requireUser } from "@/app/lib/server/auth";
 import { prisma } from "@/lib/prisma";
+import { assertSameOrigin } from "@/lib/server/origin";
 
 export async function GET() {
   const user = await requireUser();
@@ -9,6 +10,9 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
+  const originError = assertSameOrigin(req);
+  if (originError) return originError;
+
   const user = await requireUser();
   const body = await req.json().catch(() => null);
   const nickname = body?.nickname?.trim();

@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import { auth } from "@/auth";
 import { tools } from "@/lib/ai/tools";
 import { executeTool } from "@/lib/ai/executeTool";
+import { assertSameOrigin } from "@/lib/server/origin";
 
 const client = new OpenAI({
   baseURL: process.env.FREELLM_BASE_URL ?? "http://localhost:3001/v1",
@@ -149,6 +150,9 @@ function extractRelatedEvents(result: unknown) {
 }
 
 export async function POST(req: NextRequest) {
+  const originError = assertSameOrigin(req);
+  if (originError) return originError;
+
   let body: unknown;
 
   try {
