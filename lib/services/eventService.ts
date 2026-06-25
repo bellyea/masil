@@ -10,7 +10,12 @@ import {
 } from "../data/culture/mappers";
 
 export async function syncCultureEvents() {
-  const list = await fetchCultureEvents({});
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const list = (await fetchCultureEvents({})).filter(
+    (item) => parseCultureDate(item.endDate) >= today
+  );
   let successCount = 0;
 
   for (const item of list) {

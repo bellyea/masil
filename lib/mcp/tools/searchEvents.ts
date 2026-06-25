@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { EventCategory } from "@prisma/client";
+import { buildActiveEventWhere } from "@/lib/server/eventStatus";
 
 type SearchEventsParams = {
   keyword?: string;
@@ -12,6 +13,8 @@ export async function searchEvents({
 }: SearchEventsParams) {
   return prisma.event.findMany({
     where: {
+      ...buildActiveEventWhere(),
+
       ...(keyword && {
         title: {
           contains: keyword,

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { viewerStore } from "@/lib/socket-store";
+import { buildActiveEventWhere } from "@/lib/server/eventStatus";
 
 const TRENDING_LIMIT = 5;
 
@@ -21,6 +22,7 @@ export async function getTrendingEvents() {
 
   if (ids.length === 0) {
     const latestEvents = await prisma.event.findMany({
+      where: buildActiveEventWhere(),
       take: TRENDING_LIMIT,
       orderBy: {
         createdAt: "desc",
@@ -35,6 +37,7 @@ export async function getTrendingEvents() {
 
   const events = await prisma.event.findMany({
     where: {
+      ...buildActiveEventWhere(),
       id: {
         in: ids,
       },

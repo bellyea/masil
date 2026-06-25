@@ -26,6 +26,29 @@ function toApiDate(date?: string) {
   return date.replaceAll("-", "").replaceAll(".", "");
 }
 
+function formatKstApiDate(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .formatToParts(date)
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== "literal") acc[part.type] = part.value;
+      return acc;
+    }, {});
+
+  return `${parts.year}${parts.month}${parts.day}`;
+}
+
+function getDefaultEndDate() {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() + 1);
+
+  return formatKstApiDate(date);
+}
+
 async function callCultureApi(path: CultureApiPath, params: URLSearchParams) {
   params.set("serviceKey", getCultureApiKey());
 
@@ -46,8 +69,8 @@ export function fetchCultureEventListRaw(params: CultureListParams = {}) {
     PageNo: String(params.pageNo ?? 1),
     numOfrows: String(params.rows ?? 100),
     serviceTp: "A",
-    from: toApiDate(params.startDate) ?? "20260101",
-    to: toApiDate(params.endDate) ?? "20261231",
+    from: toApiDate(params.startDate) ?? formatKstApiDate(new Date()),
+    to: toApiDate(params.endDate) ?? getDefaultEndDate(),
   });
 
   if (params.keyword) {
