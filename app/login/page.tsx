@@ -1,27 +1,32 @@
-import { signInWithGoogle } from "../actions/auth-actions";
+﻿import { signInWithGoogle } from "../actions/auth-actions";
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams?: Promise<{
+    callbackUrl?: string;
+  }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const callbackUrl = params?.callbackUrl || "/";
+
   return (
-    <div
-      style={{
-        padding: 40,
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-        alignItems: "center",
-      }}
-    >
-      <h1>로그인</h1>
+    <main className="auth-page masil-page">
+      <section className="auth-panel soft-panel">
+        <p className="home-eyebrow">Login</p>
+        <h1>마실을 이어서 둘러볼까요?</h1>
+        <p>
+          북마크와 마이페이지는 로그인 후 사용할 수 있어요. 별도 가입 없이 Google 계정으로 바로 시작합니다.
+        </p>
 
-      <p>
-        이벤트 북마크와 개인화 기능을 이용하려면 로그인하세요.
-      </p>
-
-      <form action={signInWithGoogle}>
-        <button type="submit">
-          Google로 로그인
-        </button>
-      </form>
-    </div>
+        <form action={signInWithGoogle} className="auth-action-form">
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
+          <button type="submit" className="primary-action">
+            Google로 로그인
+          </button>
+        </form>
+      </section>
+    </main>
   );
 }
+

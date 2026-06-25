@@ -1,16 +1,15 @@
-export default function EventSkeleton() {
+﻿export default function EventSkeleton() {
   return (
-    <div style={{ padding: 20 }}>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            height: 60,
-            background: "#eee",
-            marginBottom: 10,
-            borderRadius: 8,
-          }}
-        />
+    <div className="event-grid" aria-label="행사 목록 로딩">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <article key={index} className="event-card soft-panel">
+          <div className="event-card__media skeleton-surface" />
+          <div className="event-card__body">
+            <span className="skeleton-line short" />
+            <span className="skeleton-line title" />
+            <span className="skeleton-line" />
+          </div>
+        </article>
       ))}
     </div>
   );
