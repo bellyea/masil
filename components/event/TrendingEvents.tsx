@@ -26,6 +26,7 @@ function formatDateRange(startDate?: string, endDate?: string) {
   if (!startDate || !endDate) return "일정 확인 중";
 
   const formatter = new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
     month: "short",
     day: "numeric",
   });
