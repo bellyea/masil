@@ -6,10 +6,8 @@ import { tools } from "@/lib/ai/tools";
 import { executeTool } from "@/lib/ai/executeTool";
 import { assertSameOrigin } from "@/lib/server/origin";
 
-const client = new OpenAI({
-  baseURL: process.env.FREELLM_BASE_URL ?? "http://localhost:3001/v1",
-  apiKey: process.env.FREELLM_API_KEY!,
-});
+const DEFAULT_LOCAL_LLM_BASE_URL = "http://localhost:3001/v1";
+const DEFAULT_LOCAL_LLM_MODEL = "auto";
 
 const SYSTEM_PROMPT = `
 너는 마실(Masil)의 문화행사 추천 도우미입니다.
@@ -65,11 +63,39 @@ const ALLOWED_KEYWORDS = [
 
 const MAX_MESSAGE_LENGTH = 200;
 const RATE_LIMIT_CLEANUP_INTERVAL_MS = 5 * 60_000;
+const ONE_MINUTE_MS = 60_000;
+const ONE_DAY_MS = 24 * 60 * 60_000;
 
 type RateLimitEntry = { count: number; resetAt: number };
 
 const rateLimitMap = new Map<string, RateLimitEntry>();
 let lastRateLimitCleanupAt = 0;
+let openAIClient: OpenAI | null = null;
+
+function getLlmConfig() {
+  const baseURL =
+    process.env.LLM_BASE_URL ??
+    process.env.FREELLM_BASE_URL ??
+    DEFAULT_LOCAL_LLM_BASE_URL;
+
+  const apiKey = process.env.LLM_API_KEY ?? process.env.FREELLM_API_KEY;
+  const model = process.env.LLM_MODEL ?? DEFAULT_LOCAL_LLM_MODEL;
+
+  return { baseURL, apiKey, model };
+}
+
+function getOpenAIClient() {
+  const { baseURL, apiKey } = getLlmConfig();
+
+  if (!apiKey) return null;
+
+  openAIClient ??= new OpenAI({
+    baseURL,
+    apiKey,
+  });
+
+  return openAIClient;
+}
 
 function isCultureRelated(message: string): boolean {
   const normalizedMessage = message.replace(/\s+/g, "");
@@ -92,20 +118,20 @@ function cleanupRateLimitMap(now: number) {
   lastRateLimitCleanupAt = now;
 }
 
-function checkRateLimit(key: string, maxCount: number, windowMs: number): boolean {
+function checkRateLimit(key: string, maxCount: number, windowMs: number, cost = 1): boolean {
   const now = Date.now();
   cleanupRateLimitMap(now);
 
   const entry = rateLimitMap.get(key);
 
   if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
+    rateLimitMap.set(key, { count: cost, resetAt: now + windowMs });
     return true;
   }
 
-  if (entry.count >= maxCount) return false;
+  if (entry.count + cost > maxCount) return false;
 
-  entry.count += 1;
+  entry.count += cost;
   return true;
 }
 
@@ -147,6 +173,74 @@ function extractRelatedEvents(result: unknown) {
         typeof event.title === "string"
     )
     .map((event) => ({ id: event.id, title: event.title }));
+}
+
+function checkChatRateLimits(userId: string | undefined, ip: string) {
+  if (userId) {
+    if (!checkRateLimit(`user:${userId}:minute`, 4, ONE_MINUTE_MS)) {
+      return NextResponse.json(
+        {
+          answer: "잠시 후 다시 질문해주세요. 로그인 사용자는 1분에 4회까지 질문할 수 있어요.",
+          events: [],
+        },
+        { status: 429 }
+      );
+    }
+
+    if (!checkRateLimit(`user:${userId}:day`, 10, ONE_DAY_MS)) {
+      return NextResponse.json(
+        {
+          answer: "오늘 사용할 수 있는 AI 추천 횟수를 모두 사용했어요. 내일 다시 이용해주세요.",
+          events: [],
+        },
+        { status: 429 }
+      );
+    }
+  } else if (!checkRateLimit(`ip:${ip}:guest-day`, 3, ONE_DAY_MS)) {
+    return NextResponse.json(
+      {
+        answer: "비로그인 사용자는 하루 3회까지 질문할 수 있어요. 로그인하면 더 많이 사용할 수 있어요.",
+        events: [],
+      },
+      { status: 429 }
+    );
+  }
+
+  if (!checkRateLimit(`ip:${ip}:minute`, 5, ONE_MINUTE_MS)) {
+    return NextResponse.json(
+      {
+        answer: "요청이 너무 많아요. 잠시 후 다시 시도해주세요.",
+        events: [],
+      },
+      { status: 429 }
+    );
+  }
+
+  return null;
+}
+
+function reserveGlobalLlmBudget() {
+  if (!checkRateLimit("global:llm:minute", 8, ONE_MINUTE_MS, 2)) {
+    return NextResponse.json(
+      {
+        answer: "AI ?? ??? ?? ????. ?? ? ?? ??????.",
+        events: [],
+      },
+      { status: 429 }
+    );
+  }
+
+  if (!checkRateLimit("global:llm:day", 45, ONE_DAY_MS, 2)) {
+    return NextResponse.json(
+      {
+        answer: "?? ??? ? ?? AI ?? ??? ?? ?????. ?? ?? ??????.",
+        events: [],
+      },
+      { status: 429 }
+    );
+  }
+
+  return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -191,44 +285,9 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   const userId = session?.user?.id;
   const ip = getClientIp(req);
+  const rateLimitError = checkChatRateLimits(userId, ip);
 
-  if (userId) {
-    const allowed = checkRateLimit(`user:${userId}`, 10, 60_000);
-
-    if (!allowed) {
-      return NextResponse.json(
-        {
-          answer: "잠시 후 다시 질문해주세요. 로그인 사용자는 1분에 10회까지 질문할 수 있어요.",
-          events: [],
-        },
-        { status: 429 }
-      );
-    }
-  } else {
-    const allowed = checkRateLimit(`ip:${ip}`, 3, 24 * 60 * 60_000);
-
-    if (!allowed) {
-      return NextResponse.json(
-        {
-          answer: "비로그인 사용자는 하루 3회까지 질문할 수 있어요. 로그인하면 더 많이 사용할 수 있어요.",
-          events: [],
-        },
-        { status: 429 }
-      );
-    }
-  }
-
-  const ipAllowed = checkRateLimit(`ip-strict:${ip}`, 20, 60_000);
-
-  if (!ipAllowed) {
-    return NextResponse.json(
-      {
-        answer: "요청이 너무 많아요. 잠시 후 다시 시도해주세요.",
-        events: [],
-      },
-      { status: 429 }
-    );
-  }
+  if (rateLimitError) return rateLimitError;
 
   if (!isCultureRelated(trimmedMessage)) {
     return NextResponse.json({
@@ -237,9 +296,27 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  const globalBudgetError = reserveGlobalLlmBudget();
+
+  if (globalBudgetError) return globalBudgetError;
+
+  const client = getOpenAIClient();
+
+  if (!client) {
+    return NextResponse.json(
+      {
+        answer: "AI 추천 설정이 아직 준비되지 않았어요. 관리자에게 문의해주세요.",
+        events: [],
+      },
+      { status: 500 }
+    );
+  }
+
+  const { model } = getLlmConfig();
+
   try {
     const response = await client.chat.completions.create({
-      model: "auto",
+      model,
       max_tokens: 500,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
@@ -280,7 +357,7 @@ export async function POST(req: NextRequest) {
     }
 
     const finalResponse = await client.chat.completions.create({
-      model: "auto",
+      model,
       max_tokens: 500,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
