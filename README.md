@@ -8,8 +8,7 @@
 
 마실은 "이웃에 놀러 다니는 일"이라는 뜻을 가진 이름입니다. 사용자가 부담 없이 문화행사를 둘러보고, 마음에 드는 나들이를 고를 수 있도록 설계했습니다.
 
-- Service: https://masil-plum.vercel.app
-- Repository: GitHub URL
+- Service: [마실 사이트 바로가기](https://masil-plum.vercel.app)
 
 ## Preview
 
