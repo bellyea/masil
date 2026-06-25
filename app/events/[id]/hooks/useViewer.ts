@@ -1,46 +1,54 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { io, type Socket } from "socket.io-client";
+
+const HEARTBEAT_INTERVAL_MS = 15_000;
+
+function createViewerSessionId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 export function useViewer(eventId: string) {
-  const socketRef = useRef<Socket | null>(null);
-  const joinedRef = useRef(false);
+  const sessionIdRef = useRef<string>(createViewerSessionId());
   const [count, setCount] = useState(0);
 
   useEffect(() => {
     if (!eventId) return;
 
-    const socket = io({
-      path: "/socket.io",
-      transports: ["websocket", "polling"],
-      reconnection: true,
-    });
+    let isMounted = true;
 
-    socketRef.current = socket;
+    const heartbeat = async () => {
+      try {
+        const response = await fetch(`/api/events/${eventId}/viewers`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ sessionId: sessionIdRef.current }),
+        });
 
-    socket.on("connect", () => {
-      socket.emit("join", eventId);
-      joinedRef.current = true;
-      setCount((current) => Math.max(current, 1));
-    });
+        if (!response.ok) return;
 
-    socket.on("viewer", (value: number) => {
-      setCount(value);
-    });
+        const data = await response.json();
 
-    socket.on("connect_error", (error) => {
-      console.error("viewer socket connection failed", error.message);
-    });
+        if (isMounted && typeof data.count === "number") {
+          setCount(data.count);
+        }
+      } catch (error) {
+        console.error("viewer heartbeat failed", error);
+      }
+    };
+
+    heartbeat();
+    const intervalId = window.setInterval(heartbeat, HEARTBEAT_INTERVAL_MS);
 
     return () => {
-      if (joinedRef.current) {
-        socket.emit("leave", eventId);
-      }
-
-      socket.disconnect();
-      socketRef.current = null;
-      joinedRef.current = false;
+      isMounted = false;
+      window.clearInterval(intervalId);
     };
   }, [eventId]);
 
