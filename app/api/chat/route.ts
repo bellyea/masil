@@ -223,7 +223,7 @@ function reserveGlobalLlmBudget() {
   if (!checkRateLimit("global:llm:minute", 8, ONE_MINUTE_MS, 2)) {
     return NextResponse.json(
       {
-        answer: "AI ?? ??? ?? ????. ?? ? ?? ??????.",
+        answer: "AI 요청이 잠시 몰리고 있어요. 잠시 후 다시 질문해주세요.",
         events: [],
       },
       { status: 429 }
@@ -233,7 +233,7 @@ function reserveGlobalLlmBudget() {
   if (!checkRateLimit("global:llm:day", 45, ONE_DAY_MS, 2)) {
     return NextResponse.json(
       {
-        answer: "?? ??? ? ?? AI ?? ??? ?? ?????. ?? ?? ??????.",
+        answer: "오늘 사용할 수 있는 AI 추천 한도에 도달했어요. 내일 다시 이용해주세요.",
         events: [],
       },
       { status: 429 }
